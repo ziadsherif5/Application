@@ -1,3 +1,4 @@
+
 name: Frontend CI/CD
 on:
   push:
@@ -29,13 +30,20 @@ jobs:
           ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
           IMAGE_TAG: ${{ github.sha }} 
         run: |
+
+          mkdir -p frontend/public
+          
+          
+          mv frontend/index.html frontend/public/ || echo "index.html already moved"
+          mv frontend/manifest.json frontend/public/ || echo "manifest.json already moved"
+          
+          
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:frontend-$IMAGE_TAG ./frontend
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:frontend-$IMAGE_TAG
 
       - name: Update Kubeconfig and Deploy
         run: |
           aws eks update-kubeconfig --name ${{ vars.EKS_CLUSTER_NAME }} --region ${{ vars.AWS_REGION }}
-          
           
           sed -i "s/\${AWS_ACCOUNT_ID}/${{ vars.AWS_ACCOUNT_ID }}/g" k8s/frontend.yaml
           sed -i "s/frontend-latest/frontend-${{ github.sha }}/g" k8s/frontend.yaml
